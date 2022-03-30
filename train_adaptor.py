@@ -1,17 +1,18 @@
 from datasets import load_dataset
+from train_snip import get_snip_dataset 
+
 from transformers import RobertaTokenizer, RobertaConfig, RobertaModelWithHeads
 from transformers import BertTokenizer, BertConfig, BertModelWithHeads
 from transformers import TrainingArguments, AdapterTrainer, EvalPrediction
 import numpy as np
 import torch
 from torchsummary import summary
-
 # reference: https://github.com/Adapter-Hub/adapter-transformers/blob/master/notebooks/01_Adapter_Training.ipynb
 # python 3.8 cuda 11.2 install using: pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 model_name = "bert-base-uncased"
-# dataset_name = "snips_built_in_intents"
-dataset_name = "clinc_oos"
+dataset_name = "snips_built_in_intents"
+# dataset_name = "clinc_oos"
 dataset_label_num = 150
 
 if dataset_name == "clinc_oos":
@@ -19,7 +20,7 @@ if dataset_name == "clinc_oos":
 else:
   label = "label"
 
-dataset = load_dataset(dataset_name, "small")
+dataset = load_dataset(dataset_name)
 tokenizer = BertTokenizer.from_pretrained(model_name)
 
 def encode_batch(batch):
@@ -27,6 +28,7 @@ def encode_batch(batch):
   return tokenizer(batch["text"], max_length=80, truncation=True, padding="max_length")
 
 # Encode the input data
+print(dataset)
 dataset = dataset.map(encode_batch, batched=True)
 # The transformers model expects the target class column to be named "labels"
 
@@ -39,7 +41,7 @@ if dataset_name == "snips_built_in_intents":
   dataset = dataset["train"].train_test_split(test_size=0.2)
 
 
-print(dataset)
+print(dataset['train'][0])
 config = BertConfig.from_pretrained(
     model_name,
     num_labels=dataset_label_num,
@@ -78,12 +80,12 @@ def compute_accuracy(p: EvalPrediction):
   preds = np.argmax(p.predictions, axis=1)
   return {"acc": (preds == p.label_ids).mean()}
 
-
+train, test = get_snip_dataset(tokenizer = tokenizer)
 trainer = AdapterTrainer(
     model=model,
     args=training_args,
-    train_dataset=dataset["train"],
-    eval_dataset=dataset["test"],
+    train_dataset=train,
+    eval_dataset=test,
     compute_metrics=compute_accuracy,
 )
 

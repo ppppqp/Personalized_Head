@@ -1,35 +1,13 @@
-from flair.models import TARSClassifier
-from flair.data import Corpus,Sentence
-from flair.datasets import SentenceDataset
-from flair.trainers import ModelTrainer
 import torch
+from datasets import  load_dataset
+from torch.utils.data import Dataset
+import torch.nn.functional as F
 torch.cuda.empty_cache()
 import numpy as np
 import time
 
-with open("snips_text.txt","r",encoding='utf-8') as f:
-    text_data=f.read()
-    text_data=text_data.strip()
-    text_data=text_data.split("\n")
 
-with open("snips_label.txt","r",encoding='utf-8') as f:
-    label_data=f.read()
-    label_data=label_data.strip()
-    label_data=label_data.split("\n")
 
-intent_list=['AddToPlaylist',
-'BookRestaurant',
-'GetWeather',
-'PlayMusic',
-'SearchScreeningEvent',
-'SearchCreativeWork',
-'RateBook']
-
-index_list=[]
-for label in label_data:
-    for intent in intent_list:
-        if label==intent:
-            index_list.append(intent_list.index(intent))
 
 def split_balanced(data, target, test_size=0.1):
 
@@ -72,33 +50,71 @@ def split_balanced(data, target, test_size=0.1):
         y_train.append(target[val])
     return X_train,y_train,X_test,y_test
 
-from datasets import  load_dataset
 
-dataset = load_dataset("snips_built_in_intents")
-train_ds=[]
-test_ds=[]
-train_text,train_label,test_text,test_label=split_balanced(text_data,index_list)
-new_label=[]
-new_text = []
-count=0
-for i in range(0,len(train_label),1861):
-  if count< 7:
-    for j in range(i,i+19):
-      new_label.append(train_label[j])
-      new_text.append(train_text[j])
-    count+=1
-[new_label.append(label) for label in train_label[-7:]]
-[new_text.append(text) for text in train_text[-7:]]
 
-for datapoint,class_val in zip(new_text,new_label):
-    train_ds.append(Sentence(datapoint.lower()).add_label('snips_mobile_data', intent_list[class_val].lower()))
-train_ds=SentenceDataset(train_ds)
-for datapoint,class_val in zip(test_text[:10],test_label[:10]):
-    test_ds.append(Sentence(datapoint.lower()).add_label('snips_mobile_data', intent_list[class_val].lower()))
-test_ds=SentenceDataset(test_ds)
-print (train_ds[0])
-print (test_ds[0])
-print("data_load Completed")
+
+
+def get_snip_data():
+    with open("snips/snips_text.txt","r",encoding='utf-8') as f:
+        text_data=f.read()
+        text_data=text_data.strip()
+        text_data=text_data.split("\n")
+
+    with open("snips/snips_label.txt","r",encoding='utf-8') as f:
+        label_data=f.read()
+        label_data=label_data.strip()
+        label_data=label_data.split("\n")
+    intent_list=['AddToPlaylist',
+                'BookRestaurant',
+                'GetWeather',
+                'PlayMusic',
+                'SearchScreeningEvent',
+                'SearchCreativeWork',
+                'RateBook']
+
+    index_list=[]
+    for label in label_data:
+        for intent in intent_list:
+            if label==intent:
+                index_list.append(intent_list.index(intent))
+    train_ds=[]
+    test_ds=[]
+    train_text,train_label,test_text,test_label=split_balanced(text_data,index_list)
+    new_label=[]
+    new_text = []
+    count=0
+    for i in range(0,len(train_label),1861):
+        if count< 7:
+            for j in range(i,i+19):
+                new_label.append(train_label[j])
+                new_text.append(train_text[j])
+            count+=1
+    [new_label.append(label) for label in train_label[-7:]]
+    [new_text.append(text) for text in train_text[-7:]]
+    return new_text, new_label, test_text, test_label
+
+def get_snip_dataset(tokenizer):
+    train_text, train_label, test_text, test_label = get_snip_data()
+    return SnipDataset(train_text, train_label, tokenizer), SnipDataset(test_text, test_label, tokenizer)
+
+
+
+class SnipDataset(Dataset):
+    def __init__(self, text, label, tokenizer):
+        self.text = text
+        self.tokenizer = tokenizer
+        # for i in range(len(text)):
+        #     self.text.append(tokenizer(text[i], max_length=80, truncation=True, padding="max_length"))
+        # self.label = F.one_hot(torch.tensor(label), num_classes=7)
+        self.label = label
+    def __len__(self):
+        return len(self.text)
+
+    def __getitem__(self, idx):
+        item = self.tokenizer(self.text[idx], max_length=80, truncation=True, padding="max_length")
+        item["label"] = self.label[idx]
+        return item
+
 
 def train_module(model,fine_tune,ff_dim,nhead):
     global train_ds,test_ds
