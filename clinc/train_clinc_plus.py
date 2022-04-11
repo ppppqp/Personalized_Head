@@ -2,6 +2,7 @@ from flair.models import TARSClassifier
 from flair.data import Corpus
 from flair.datasets import SentenceDataset
 from flair.trainers import ModelTrainer
+from torch.optim.lr_scheduler import OneCycleLR
 import time
 import pickle
 from pathlib import Path
@@ -42,7 +43,7 @@ def train_module(model, fine_tune, ff_dim, nhead):
     corpus = Corpus(train=train_ds, test=test_ds, dev=dev_ds)
     start_time = time.time()
     if model == "BERT":
-        if (base_path / "checkpoint.pt").exists():
+        if False and (base_path / "checkpoint.pt").exists():
             checkpoint_model = TARSClassifier.load(
                 base_path / "checkpoint.pt", fine_tune=fine_tune, ff_dim=ff_dim, nhead=nhead)
             checkpoint_model.add_and_switch_to_new_task("clinc_data", label_dictionary=corpus.make_label_dictionary(
@@ -54,6 +55,7 @@ def train_module(model, fine_tune, ff_dim, nhead):
                                   learning_rate=0.02,
                                   mini_batch_size=16,
                                   max_epochs=100,
+                                  scheduler=OneCycleLR,
                                   monitor_train=False,  # if we want to monitor train change to True
                                   embeddings_storage_mode="cuda",
                                   train_with_dev=True,
@@ -78,8 +80,10 @@ def train_module(model, fine_tune, ff_dim, nhead):
     data = trainer.train(base_path=f'taggers/clinc_plus_{model}_with_head_only_{ff_dim}_{nhead}',  # path to store the model artifacts
                          learning_rate=0.02,
                          mini_batch_size=16,
-                         max_epochs=1,
-                         monitor_train=False,  # if we want to monitor train change to True
+                        #  cycle_momentum = True,
+                         max_epochs=200,
+                        #  scheduler=OneCycleLR,
+                        #  monitor_train=False,  # if we want to monitor train change to True
                          embeddings_storage_mode="cuda",
                          train_with_dev=True,
                          checkpoint=True

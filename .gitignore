@@ -1,0 +1,13 @@
+adapter-transformers/*
+taggers/*
+training_output/*
+fliar.zip
+log
+out
+test.py
+final_eval*
+adapter_outputs*
+adaptor_params*
+clinc/*.pkl
+clinc/taggers/*
+env/*

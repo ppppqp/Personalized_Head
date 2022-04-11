@@ -48,6 +48,7 @@ def split_balanced(data, target, test_size=0.1):
     for val in list(ix_train):
         X_train.append(data[val])
         y_train.append(target[val])
+    print("x train:", len(X_train))
     return X_train,y_train,X_test,y_test
 
 
@@ -91,10 +92,13 @@ def get_snip_data():
             count+=1
     [new_label.append(label) for label in train_label[-7:]]
     [new_text.append(text) for text in train_text[-7:]]
+
+
     return new_text, new_label, test_text, test_label
 
 def get_snip_dataset(tokenizer):
     train_text, train_label, test_text, test_label = get_snip_data()
+    print("length of the train_text:",len(train_text))
     return SnipDataset(train_text, train_label, tokenizer), SnipDataset(test_text, test_label, tokenizer)
 
 

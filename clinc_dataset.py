@@ -2,6 +2,7 @@ import time,logging
 import pandas as pd
 from torch.utils.data import Dataset
 from datasets import load_dataset
+import pickle
 intent= [
     "restaurant_reviews",
     "nutrition_info",
@@ -45,7 +46,6 @@ intent= [
     "uber",
     "car_rental",
     "credit_limit",
-    "oos",
     "shopping_list",
     "expiration_date",
     "routing",
@@ -156,7 +156,13 @@ intent= [
     "change_volume"
   ]
 
-dataset = load_dataset("clinc_oos","plus")
+# dataset = load_dataset("clinc_oos","plus")
+with open('clinc/train_data_clinc_wo_oos.pkl', 'rb') as file:
+    train = pickle.load(file)
+    print(train[0].to_plain_string())
+    print(train[1].get_labels("clinc_data")[0].value)
+
+
 def create_dataset_clinc():
     train_text,test_text,dev_text=[],[],[]
     train_class,test_class,dev_class=[],[],[]
@@ -200,9 +206,27 @@ def create_dataset_clinc():
     return  train_text,train_class,test_text,test_class,dev_text,dev_class
 
 
+def format_data(raw):
+    texts = []
+    labels = []
+    for i in range(len(raw)):
+        text = raw[i].to_plain_string()
+        label = intent.index(raw[i].get_labels("clinc_data")[0].value)
+        texts.append(text)
+        labels.append(label)
+    return texts, labels
 
 def get_clinc_dataset(tokenizer):
-    train_text,train_class,test_text,test_class,dev_text,dev_class=create_dataset_clinc()
+    # train_text,train_class,test_text,test_class,dev_text,dev_class=create_dataset_clinc()
+    with open('clinc/train_data_clinc_wo_oos.pkl', 'rb') as file:
+        train = pickle.load(file)
+    with open('clinc/test_data_clinc_wo_oos.pkl', 'rb') as file:
+        test = pickle.load(file)
+    with open('clinc/dev_data_clinc_wo_oos.pkl', 'rb') as file:
+        dev = pickle.load(file)
+    train_text, train_class = format_data(train)
+    test_text, test_class = format_data(test)
+    dev_text, dev_class = format_data(dev)
     return ClincDataset(train_text, train_class, tokenizer), ClincDataset(test_text, test_class, tokenizer), ClincDataset(dev_text, dev_class, tokenizer)
 
 
