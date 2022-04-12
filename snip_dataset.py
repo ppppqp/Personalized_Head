@@ -90,11 +90,9 @@ def get_snip_data():
                 new_label.append(train_label[j])
                 new_text.append(train_text[j])
             count+=1
-    [new_label.append(label) for label in train_label[-7:]]
-    [new_text.append(text) for text in train_text[-7:]]
 
 
-    return new_text, new_label, test_text, test_label
+    return train_text, train_label, test_text, test_label
 
 def get_snip_dataset(tokenizer):
     train_text, train_label, test_text, test_label = get_snip_data()
