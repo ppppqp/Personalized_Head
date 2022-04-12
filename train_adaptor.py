@@ -52,8 +52,7 @@ def encode_batch(batch):
 # )
 model = BertForSequenceClassification.from_pretrained(
     model_name,
-    return_dict=True,
-    num_labels=150,
+    num_labels=dataset_label_num,
     # config=config,
 )
 
@@ -73,6 +72,9 @@ model.train_adapter(dataset_name)
 #     param.requires_grad = False
 
 print("after adaptor")
+
+
+print("adapter to freeze", adapters_to_freeze)
 
 model.set_active_adapters(dataset_name, skip_layers=adapters_to_freeze)
 
@@ -96,7 +98,7 @@ def printnorm(self, input, output):
 
 # for module in model.modules():
 #     if not isinstance(module, nn.Sequential):
-        # module.register_forward_hook(printnorm)
+#         module.register_forward_hook(printnorm)
 
   
 training_args = TrainingArguments(
@@ -107,7 +109,6 @@ training_args = TrainingArguments(
     logging_steps=100,
     output_dir="./training_output",
     overwrite_output_dir=True,
-    # The next line is important to ensure the dataset labels are properly passed to the model
     remove_unused_columns=False,
 )
 

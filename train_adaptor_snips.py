@@ -50,9 +50,7 @@ config = BertConfig.from_pretrained(
 )
 model = BertForSequenceClassification.from_pretrained(
     model_name,
-    return_dict=True,
     num_labels=dataset_label_num,
-    config=config,
 )
 
 model.add_adapter(dataset_name)
