@@ -95,13 +95,9 @@ trainer = AdapterTrainer(
 )
 
 
-
-
-
-
 # trainer.add_callback(AdapterDropTrainerCallback())
 trainer.train()
 print("#################AFTER TRAINIG##################")
 # for name, param in model.named_parameters():
 #     print(name, param.data)
-print(trainer.evaluate())
+print()
